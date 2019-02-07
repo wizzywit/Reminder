@@ -13,12 +13,18 @@ import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.Window;
 import android.widget.AbsListView;
 import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 
@@ -94,12 +100,17 @@ public class RemindersActivity extends AppCompatActivity {
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                         //edit reminder
                         if(position == 0) {
-                            Toast.makeText(RemindersActivity.this, "edit"
-                            + masterListPosition, Toast.LENGTH_SHORT).show();
+//                            Toast.makeText(RemindersActivity.this, "edit"
+//                            + masterListPosition, Toast.LENGTH_SHORT).show();
+                            int nId =getIdFromPosition(masterListPosition);
+                            Reminder reminder = mDbAdapter.fetchReminderById(nId);
+                            fireCustomDialog(reminder);
                             //delete reminder
                         } else {
-                            Toast.makeText(RemindersActivity.this, "delete"
-                            + masterListPosition, Toast.LENGTH_SHORT).show();
+//                            Toast.makeText(RemindersActivity.this, "delete"
+//                            + masterListPosition, Toast.LENGTH_SHORT).show();
+                            mDbAdapter.deleteReminderById(getIdFromPosition(masterListPosition));
+                            mCursorAdapter.changeCursor(mDbAdapter.fetchAllReminders());
                         }
                         dialog.dismiss();
                     }
@@ -183,6 +194,47 @@ public class RemindersActivity extends AppCompatActivity {
         mDbAdapter.createReminder("Dinner at the dinner with my girlfriend", false);
     }
     private void fireCustomDialog(final Reminder reminder){
+    final Dialog dialog = new Dialog(this);
+    dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+    dialog.setContentView(R.layout.dialog_custom);
+
+        TextView titleview = (TextView) dialog.findViewById(R.id.custom_tittle);
+        final EditText editCustom = (EditText) dialog.findViewById(R.id.custom_edit_reminder);
+        Button commitButton = (Button) dialog.findViewById(R.id.custom_button_commit);
+        final CheckBox checkbox  = (CheckBox) dialog.findViewById(R.id.custom_check_box);
+        LinearLayout rootLayout = (LinearLayout) dialog.findViewById(R.id.custom_root_layout);
+        final boolean isEditOperation = (reminder != null);
+
+        //this is for the edit
+        if (isEditOperation){
+            titleview.setText("Edit Reminder");
+            checkbox.setChecked(reminder.getImportant() == 1);
+            editCustom.setText(reminder.getContent());
+            rootLayout.setBackgroundColor(getResources().getColor(R.color.blue));
+        }
+        commitButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String reminderText = editCustom.getText().toString();
+                if(isEditOperation){
+                    Reminder reminderEdited = new Reminder(reminder.getId(),reminderText,checkbox.isChecked()?1:0);
+                    mDbAdapter.updateReminder(reminderEdited);
+                    //this is for new reminder
+                }
+                else {
+                    mDbAdapter.createReminder(reminderText, checkbox.isChecked());
+                    dialog.dismiss();
+                }
+            }
+        });
+
+        Button cancelButton = (Button) findViewById(R.id.custom_button_cancel);
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
 
     }
 
@@ -201,7 +253,7 @@ public class RemindersActivity extends AppCompatActivity {
         switch (item.getItemId()){
             case R.id.action_new:
                 //create new reminder
-                Log.d(getLocalClassName(),"create new reminder");
+                fireCustomDialog(null);
                 return true;
             case R.id.action_exit:
                 finish();
