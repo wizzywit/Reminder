@@ -182,6 +182,9 @@ public class RemindersActivity extends AppCompatActivity {
         mDbAdapter.createReminder("send some birthday gift to mummy", false);
         mDbAdapter.createReminder("Dinner at the dinner with my girlfriend", false);
     }
+    private void fireCustomDialog(final Reminder reminder){
+
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
